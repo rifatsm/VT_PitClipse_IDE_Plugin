@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <feature id="org.pitest.feature">
+      <category name="org.pitest.pitclipse"/>
+   </feature>
+   <feature id="org.pitest.pitclipse.core.feature">
+      <category name="org.pitest.pitclipse"/>
+   </feature>
+   <feature id="org.pitest.pitclipse.ui.feature">
+      <category name="org.pitest.pitclipse"/>
+   </feature>
+   <category-def name="org.pitest.pitclipse" label="Pitclipse">
+      <description>
+         Eclipse support for Pitest (PIT), a state of the art mutation testing system
+      </description>
+   </category-def>
+   <repository-reference location="https://download.eclipse.org/tools/orbit/downloads/drops/R20170818183741/repository" enabled="true" />
+</site>

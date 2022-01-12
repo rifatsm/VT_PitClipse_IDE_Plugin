@@ -1,0 +1,383 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>org.pitest</groupId>
+	<artifactId>org.pitest.pitclipse</artifactId>
+	<version>2.1.2-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+	<name>Pitclipse</name>
+	<description>Eclipse IDE integration of Pitest</description>
+
+	<modules>
+		<module>bundles</module>
+		<module>features</module>
+		<module>releng</module>
+		<module>tests</module>
+	</modules>
+
+	<prerequisites>
+		<maven>3.0</maven>
+	</prerequisites>
+
+	<properties>
+		<!-- DEPENDENCIES -->
+		<!-- last version of Tycho before requiring Java 11 -->
+		<tycho-version>2.4.0</tycho-version>
+		<jacoco-version>0.8.6</jacoco-version>
+
+		<!-- MISC -->
+		<maven-antrun-plugin.version>1.7</maven-antrun-plugin.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+		<!-- CI (GITHUB ACTIONS) -->
+
+		<!-- Required properties for releasing -->
+		<github-update-repo>git@github.com:pitest/pitclipse-releases.git</github-update-repo>
+		<github-local-clone>${project.build.directory}/checkout</github-local-clone>
+		<releases-directory>${github-local-clone}/releases</releases-directory>
+		<current-release-directory>${releases-directory}/${qualifiedVersion}</current-release-directory>
+		<eclipse-version>oxygen</eclipse-version>
+
+		<!-- For target platform -->
+		<!-- This can be replaced on the command line, e.g.,
+			-Dtarget-file-name=older.target -->
+		<target-file-name>org.pitest.pitclipse.target.target</target-file-name>
+
+		<!-- The label for the Composite sites -->
+		<site.label>Pitclipse</site.label>
+
+		<!-- SONARQUBE -->
+		<sonar.projectName>Pitclipse</sonar.projectName>
+
+		<sonar.organization>echebbi-github</sonar.organization>
+		<sonar.links.ci>https://github.com/pitest/pitclipse/actions</sonar.links.ci>
+		<sonar.links.scm>https://github.com/pitest/pitclipse</sonar.links.scm>
+		<sonar.links.issue>https://github.com/pitest/pitclipse/issues</sonar.links.issue>
+		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
+		<sonar.java.source>8</sonar.java.source>
+		<!-- Ignore :
+				- Exceptions,
+				- untestable activators -->
+		<sonar.exclusions>
+			**/*Exception.java,
+			**/*Activator.java,
+			**/*RunnerMain.java,
+			**/runner/model/*.java,
+			**/runner/results/summary/*.java,
+		</sonar.exclusions>
+		<sonar.coverage.exclusions>
+			**/PitclipseUiUtils.java,
+			**/PitclipseLaunchUiUtils.java,
+			**/LinkSelectionAdapter.java,
+		</sonar.coverage.exclusions>
+		<sonar.coverage.jacoco.xmlReportPaths>
+			${basedir}/../../tests/org.pitest.pitclipse.tests.coverage.report/target/site/jacoco-aggregate/jacoco.xml
+		</sonar.coverage.jacoco.xmlReportPaths>
+	</properties>
+
+	<!-- COMMANDS:
+		* Build project:
+			mvn clean verify
+
+		* Change project's version:
+			mvn org.eclipse.tycho:tycho-versions-plugin:set-version -DnewVersion=major.minor.bug -DskipTests
+
+		* Publish current version to GitHub Pages:
+			mvn clean deploy -Prelease-composite
+		Also note that it requires write access to GitHub Pages repositories,
+		e.g., https://github.com/pitest/pitclipse-releases
+	-->
+
+	<build>
+		<plugins>
+			<plugin>
+				<!-- Activate Tycho, along as its extension Tycho's pomless extension
+						is activated in .mvn folder -->
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-maven-plugin</artifactId>
+				<version>${tycho-version}</version>
+				<extensions>true</extensions>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-versions-plugin</artifactId>
+				<version>${tycho-version}</version>
+			</plugin>
+			<plugin>
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>tycho-packaging-plugin</artifactId>
+				<version>${tycho-version}</version>
+				<configuration>
+					<format>'v'yyyyMMdd'-'HHmm</format>
+				</configuration>
+			</plugin>
+			<plugin>
+				<!-- Activate Pitclipse's target platform -->
+				<groupId>org.eclipse.tycho</groupId>
+				<artifactId>target-platform-configuration</artifactId>
+				<version>${tycho-version}</version>
+				<configuration>
+					<target>
+						<file>../../releng/org.pitest.pitclipse.target/${target-file-name}</file>
+					</target>
+					<environments>
+						<environment>
+							<os>linux</os>
+							<ws>gtk</ws>
+							<arch>x86_64</arch>
+						</environment>
+						<environment>
+							<os>win32</os>
+							<ws>win32</ws>
+							<arch>x86_64</arch>
+						</environment>
+						<environment>
+							<os>macosx</os>
+							<ws>cocoa</ws>
+							<arch>x86_64</arch>
+						</environment>
+					</environments>
+				</configuration>
+			</plugin>
+		</plugins>
+		<pluginManagement>
+			<plugins>
+				<!-- Ask Tycho to auto-generate <plugin-name>.source plugins -->
+				<plugin>
+					<groupId>org.eclipse.tycho</groupId>
+					<artifactId>tycho-source-plugin</artifactId>
+					<version>${tycho-version}</version>
+					<executions>
+						<execution>
+							<id>attach-source</id>
+							<phase>process-classes</phase>
+							<goals>
+								<goal>plugin-source</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.eclipse.tycho</groupId>
+					<artifactId>tycho-compiler-plugin</artifactId>
+					<version>${tycho-version}</version>
+					<configuration>
+						<encoding>UTF-8</encoding>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-scm-plugin</artifactId>
+					<version>1.11.2</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-resources-plugin</artifactId>
+					<version>3.2.0</version>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>exec-maven-plugin</artifactId>
+					<version>3.0.0</version>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>build-helper-maven-plugin</artifactId>
+					<version>3.2.0</version>
+				</plugin>
+				<plugin>
+					<groupId>org.eclipse.tycho.extras</groupId>
+					<artifactId>tycho-eclipserun-plugin</artifactId>
+					<version>${tycho-version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.sonarsource.scanner.maven</groupId>
+					<artifactId>sonar-maven-plugin</artifactId>
+					<version>3.9.0.2155</version>
+				</plugin>
+				<!-- We don't use checkstyle anymore since we use Sonar.
+					We leave the configuration here just in case -->
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-checkstyle-plugin</artifactId>
+					<version>3.0.0</version>
+					<executions>
+						<execution>
+							<id>validate</id>
+							<phase>validate</phase>
+							<configuration>
+								<configLocation>checkstyle.xml</configLocation>
+								<encoding>UTF-8</encoding>
+								<consoleOutput>true</consoleOutput>
+								<failsOnError>true</failsOnError>
+							</configuration>
+							<goals>
+								<goal>check</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+									org.apache.maven.plugins
+										</groupId>
+										<artifactId>
+									maven-clean-plugin
+										</artifactId>
+										<versionRange>
+									[2.5,)
+										</versionRange>
+										<goals>
+											<goal>clean</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+									org.codehaus.mojo
+										</groupId>
+										<artifactId>
+									build-helper-maven-plugin
+										</artifactId>
+										<versionRange>
+									[1.9.1,)
+										</versionRange>
+										<goals>
+											<goal>add-resource</goal>
+											<goal>add-source</goal>
+											<goal>add-test-resource</goal>
+											<goal>add-test-source</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+									org.eclipse.tycho
+										</groupId>
+										<artifactId>
+									tycho-compiler-plugin
+										</artifactId>
+										<versionRange>
+									[1.5.1,)
+										</versionRange>
+										<goals>
+											<goal>compile</goal>
+											<goal>testCompile</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+									org.eclipse.tycho
+										</groupId>
+										<artifactId>
+									tycho-packaging-plugin
+										</artifactId>
+										<versionRange>
+									[0.23.1,)
+										</versionRange>
+										<goals>
+											<goal>build-qualifier</goal>
+											<goal>build-qualifier-aggregator</goal>
+											<goal>validate-id</goal>
+											<goal>validate-version</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											org.eclipse.tycho
+										</groupId>
+										<artifactId>
+											target-platform-configuration
+										</artifactId>
+										<versionRange>
+											[2.4.0,)
+										</versionRange>
+										<goals>
+											<goal>target-platform</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
+	<profiles>
+		<profile>
+			<!-- Activate this profile to perform the release to GitHub Pages -->
+			<id>release-composite</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<properties>
+				<skipTests>true</skipTests>
+			</properties>
+			<build>
+				<pluginManagement>
+					<plugins>
+						<plugin>
+							<artifactId>maven-install-plugin</artifactId>
+							<executions>
+								<execution>
+									<id>default-install</id>
+									<phase>none</phase>
+								</execution>
+							</executions>
+						</plugin>
+						<plugin>
+							<artifactId>maven-deploy-plugin</artifactId>
+							<configuration>
+								<skip>true</skip>
+							</configuration>
+						</plugin>
+					</plugins>
+				</pluginManagement>
+			</build>
+		</profile>
+		<profile>
+			<!-- This assumes that release-composite is enabled as well -->
+			<id>release-snapshots</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<properties>
+				<github-update-repo>git@github.com:pitest/pitclipse-snapshots.git</github-update-repo>
+				<site.label>Pitclipse Snapshots</site.label>
+			</properties>
+		</profile>
+	</profiles>
+</project>

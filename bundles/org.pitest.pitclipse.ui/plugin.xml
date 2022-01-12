@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension-point id="org.pitest.pitclipse.ui.results" name="ResultsUpdated" schema="schema/org.pitest.pitclipse.ui.results.exsd"/>
+   <extension
+         point="org.pitest.pitclipse.core.results">
+      <results
+            class="org.pitest.pitclipse.ui.notify.PitResultsNotifier"></results>
+   </extension>
+   <extension
+         point="org.eclipse.ui.views">
+      <category id="org.pitest.pitclipse.ui.view.category" name="PIT"/>
+      <view
+          allowMultiple="false"
+          class="org.pitest.pitclipse.ui.view.PitView"
+          icon="icons/pit.gif"
+          id="org.pitest.pitclipse.ui.view.PitView"
+          category="org.pitest.pitclipse.ui.view.category"
+          name="PIT Summary"
+          restorable="true"/>
+      <view
+          allowMultiple="false"
+          class="org.pitest.pitclipse.ui.view.mutations.PitMutationsView"
+          icon="icons/pit.gif"
+          id="org.pitest.pitclipse.ui.view.mutations.PitMutationsView"
+          category="org.pitest.pitclipse.ui.view.category"
+          name="PIT Mutations"
+          restorable="true"/>
+   </extension>
+   <extension
+         point="org.pitest.pitclipse.core.executePit">
+      <pit_options
+            class="org.pitest.pitclipse.ui.view.PitExecutionStarted"></pit_options>
+   </extension>
+   <extension
+         point="org.pitest.pitclipse.core.mutations.results">
+      <results
+            class="org.pitest.pitclipse.ui.view.mutations.MutationModelChangedNotifier"></results>
+   </extension>
+</plugin>
